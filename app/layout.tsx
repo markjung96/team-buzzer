@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Team Buzzer",
-  description: "팀 버저 게임 - 먼저 누른 팀이 이긴다!",
+  description: "먼저 누른 팀이 이긴다",
 };
 
 export const viewport: Viewport = {
@@ -13,14 +13,10 @@ export const viewport: Viewport = {
   userScalable: false,
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ko" className="h-full">
-      <body className="min-h-dvh flex flex-col bg-background text-foreground">
+    <html lang="ko">
+      <body style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
         {children}
       </body>
     </html>

@@ -1,216 +1,44 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
-:root {
-  --background: #0a0a1a;
-  --foreground: #f0f0ff;
-  --team-red: #ff4757;
-  --team-blue: #3742fa;
-  --accent: #ffd32a;
-  --glow-red: rgba(255, 71, 87, 0.4);
-  --glow-blue: rgba(55, 66, 250, 0.4);
-  --glow-accent: rgba(255, 211, 42, 0.3);
+* { -webkit-tap-highlight-color: transparent; }
+
+/* Focus visible ring for keyboard users */
+:focus-visible {
+  outline: 2px solid #5B64FF;
+  outline-offset: 2px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-team-red: var(--team-red);
-  --color-team-blue: var(--team-blue);
-  --color-accent: var(--accent);
-}
-
-* {
-  -webkit-tap-highlight-color: transparent;
+/* Remove default focus for mouse users */
+:focus:not(:focus-visible) {
+  outline: none;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #0A0A0A;
+  color: #FFFFFF;
+  font-family: "Space Grotesk", "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   overflow-x: hidden;
+  margin: 0;
 }
 
-/* Animated gradient background */
-.bg-game {
-  background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 50%, #0a0a1a 100%);
-  background-size: 400% 400%;
-  animation: gradient-shift 8s ease infinite;
+@keyframes bzBlink { 50% { opacity: 0 } }
+@keyframes bzPulse { 50% { opacity: 0.4 } }
+@keyframes bzBreath {
+  0%,100% { transform: scale(1); box-shadow: 0 0 0 0 var(--c) }
+  50% { transform: scale(1.02); box-shadow: 0 0 0 24px transparent }
 }
-
-@keyframes gradient-shift {
-  0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+@keyframes bzFlash {
+  0% { opacity: 0 }
+  15% { opacity: 1 }
+  100% { opacity: 0 }
 }
-
-/* Pulse buzzer */
-@keyframes pulse-buzzer {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 var(--glow-accent); }
-  50% { transform: scale(1.03); box-shadow: 0 0 40px 10px var(--glow-accent); }
+@keyframes bzPop {
+  0% { transform: translateY(20px) scale(0.92); opacity: 0 }
+  60% { transform: translateY(-4px) scale(1.02); opacity: 1 }
+  100% { transform: translateY(0) scale(1); opacity: 1 }
 }
-
-@keyframes pulse-red {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 var(--glow-red); }
-  50% { transform: scale(1.03); box-shadow: 0 0 40px 10px var(--glow-red); }
-}
-
-@keyframes pulse-blue {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 var(--glow-blue); }
-  50% { transform: scale(1.03); box-shadow: 0 0 40px 10px var(--glow-blue); }
-}
-
-/* Flash win */
-@keyframes flash-win {
-  0% { opacity: 0; }
-  15% { opacity: 0.7; }
-  100% { opacity: 0; }
-}
-
-/* Pop in */
-@keyframes pop-in {
-  0% { transform: scale(0.3) rotate(-5deg); opacity: 0; }
-  60% { transform: scale(1.1) rotate(1deg); }
-  100% { transform: scale(1) rotate(0deg); opacity: 1; }
-}
-
-/* Slide up */
-@keyframes slide-up {
-  0% { transform: translateY(30px); opacity: 0; }
-  100% { transform: translateY(0); opacity: 1; }
-}
-
-/* Float */
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
-
-/* Shimmer */
-@keyframes shimmer {
-  0% { background-position: -200% center; }
-  100% { background-position: 200% center; }
-}
-
-/* Trophy bounce */
-@keyframes trophy-bounce {
-  0%, 100% { transform: scale(1) rotate(0deg); }
-  25% { transform: scale(1.2) rotate(-5deg); }
-  50% { transform: scale(1.3) rotate(5deg); }
-  75% { transform: scale(1.1) rotate(-3deg); }
-}
-
-.animate-pulse-buzzer { animation: pulse-buzzer 1.8s ease-in-out infinite; }
-.animate-pulse-red { animation: pulse-red 1.8s ease-in-out infinite; }
-.animate-pulse-blue { animation: pulse-blue 1.8s ease-in-out infinite; }
-.animate-flash-win { animation: flash-win 1.2s ease-out forwards; }
-.animate-pop-in { animation: pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
-.animate-slide-up { animation: slide-up 0.5s ease-out forwards; }
-.animate-float { animation: float 3s ease-in-out infinite; }
-.animate-trophy { animation: trophy-bounce 1s ease-in-out infinite; }
-.animate-shimmer {
-  background: linear-gradient(90deg, transparent 30%, rgba(255,255,255,0.08) 50%, transparent 70%);
-  background-size: 200% 100%;
-  animation: shimmer 2s linear infinite;
-}
-
-/* Glass card */
-.glass {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-/* Neon text */
-.neon-text {
-  text-shadow: 0 0 10px var(--glow-accent), 0 0 40px var(--glow-accent);
-}
-
-/* Game input */
-.game-input {
-  background: rgba(255, 255, 255, 0.06);
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  padding: 14px 20px;
-  color: white;
-  font-size: 1.1rem;
-  text-align: center;
-  outline: none;
-  transition: all 0.3s ease;
-}
-
-.game-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 20px rgba(255, 211, 42, 0.15);
-}
-
-.game-input::placeholder {
-  color: rgba(255, 255, 255, 0.3);
-}
-
-/* Game button */
-.btn-primary {
-  background: linear-gradient(135deg, var(--team-blue), #5f27cd);
-  border: none;
-  border-radius: 16px;
-  padding: 16px 32px;
-  color: white;
-  font-weight: 800;
-  font-size: 1.1rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(55, 66, 250, 0.4);
-}
-
-.btn-primary:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.btn-primary:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: rgba(255, 255, 255, 0.08);
-  border: 2px solid rgba(255, 255, 255, 0.12);
-  border-radius: 16px;
-  padding: 16px 32px;
-  color: white;
-  font-weight: 700;
-  font-size: 1.1rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.14);
-  border-color: rgba(255, 255, 255, 0.2);
-  transform: translateY(-2px);
-}
-
-.btn-green {
-  background: linear-gradient(135deg, #2ed573, #17c964);
-  border: none;
-  border-radius: 16px;
-  padding: 16px 32px;
-  color: white;
-  font-weight: 800;
-  font-size: 1.1rem;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.btn-green:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(46, 213, 115, 0.4);
-}
-
-.btn-green:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
+@keyframes bzBar {
+  0%,100% { transform: scaleY(0.3) }
+  50% { transform: scaleY(1) }
 }
