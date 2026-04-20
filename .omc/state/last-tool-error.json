@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"cmux browser navigate http://localhost:3000 --surface surface:63 2>&1 && sleep 2 && cmux browser screenshot --surface surface:63 --out /tmp/buzzer-new.png 2>&1\",\"timeout\":15000,\"descriptio...",
+  "error": "Exit code 1\nError: not_found: Surface not found or not a browser",
+  "timestamp": "2026-04-20T05:46:49.195Z",
+  "retry_count": 1
+}
