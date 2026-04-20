@@ -18,6 +18,7 @@ function PlayerLobby() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [selected, setSelected] = useState<string | null>(null);
   const [hostLeft, setHostLeft] = useState(false);
+  const [roundActive, setRoundActive] = useState(false);
   const nickname = typeof window !== 'undefined' ? sessionStorage.getItem('nickname') || '' : '';
 
   useEffect(() => {
@@ -26,21 +27,41 @@ function PlayerLobby() {
     const savedCode = sessionStorage.getItem('roomCode');
     if (nick && savedCode) socket.emit('rejoin-room', { code: savedCode, nickname: nick });
 
-    socket.on('room-joined', ({ roomState }: { roomState: { teams: Team[]; players: { nickname: string; teamId: string | null }[] } }) => {
+    const handleRoomJoined = ({ roomState }: { roomState: { teams: Team[]; players: { nickname: string; teamId: string | null }[]; round: { active: boolean } } }) => {
       setTeams(roomState.teams);
       const me = roomState.players.find(p => p.nickname === nick);
-      if (me?.teamId) setSelected(me.teamId);
-    });
-    socket.on('teams-updated', ({ teams: t }: { teams: Team[] }) => setTeams(t));
-    socket.on('round-started', () => router.push(`/player/game?code=${code}`));
-    socket.on('host-left', () => setHostLeft(true));
+      if (me?.teamId) {
+        setSelected(me.teamId);
+        sessionStorage.setItem('teamId', me.teamId);
+      }
+      if (roomState.round.active) {
+        setRoundActive(true);
+        if (me?.teamId) router.push(`/player/game?code=${code}`);
+      }
+    };
+    const handleTeamsUpdated = ({ teams: t }: { teams: Team[] }) => setTeams(t);
+    const handleRoundStarted = () => {
+      setRoundActive(true);
+      const currentTeam = sessionStorage.getItem('teamId');
+      if (currentTeam) router.push(`/player/game?code=${code}`);
+    };
+    const handleHostLeft = () => setHostLeft(true);
 
-    return () => { socket.off('room-joined'); socket.off('teams-updated'); socket.off('round-started'); socket.off('host-left'); };
+    socket.on('room-joined', handleRoomJoined);
+    socket.on('teams-updated', handleTeamsUpdated);
+    socket.on('round-started', handleRoundStarted);
+    socket.on('host-left', handleHostLeft);
+
+    return () => { socket.off('room-joined', handleRoomJoined); socket.off('teams-updated', handleTeamsUpdated); socket.off('round-started', handleRoundStarted); socket.off('host-left', handleHostLeft); };
   }, [code, router]);
 
   const handleSelect = (teamId: string) => {
     setSelected(teamId);
+    sessionStorage.setItem('teamId', teamId);
     getSocket().emit('pick-team', { teamId });
+    if (roundActive) {
+      router.push(`/player/game?code=${code}`);
+    }
   };
 
   if (hostLeft) {
@@ -65,9 +86,16 @@ function PlayerLobby() {
     }}>
       {/* Top */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <div style={{ fontFamily: BZ.mono, fontSize: 10, letterSpacing: 2, color: BZ.textDim }}>ROOM</div>
-          <div style={{ fontFamily: BZ.mono, fontSize: 20, fontWeight: 700, letterSpacing: 3 }}>{code}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button onClick={() => { getSocket().emit('leave-room'); sessionStorage.clear(); router.push('/'); }} style={{
+            width: 36, height: 36, borderRadius: 10, border: `1px solid ${BZ.line}`,
+            background: BZ.surface, color: BZ.textMuted, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, padding: 0,
+          }}>←</button>
+          <div>
+            <div style={{ fontFamily: BZ.mono, fontSize: 10, letterSpacing: 2, color: BZ.textDim }}>ROOM</div>
+            <div style={{ fontFamily: BZ.mono, fontSize: 20, fontWeight: 700, letterSpacing: 3 }}>{code}</div>
+          </div>
         </div>
         <div style={{
           padding: '6px 12px', borderRadius: 9999, background: BZ.surface,

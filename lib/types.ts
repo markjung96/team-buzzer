@@ -18,6 +18,7 @@ export interface RankEntry {
   teamColor: string | null;
   rank: number;
   timestamp: number;
+  reactionMs: number | null; // client-measured reaction time in ms
 }
 
 export interface Round {

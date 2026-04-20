@@ -1,15 +1,69 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getSocket } from '@/lib/socket';
 import { BZ, shade } from '@/lib/tokens';
 import { RankEntry, Team } from '@/lib/types';
 import { Trophy, ArrowR, Live } from '@/components/Icons';
 
+function useElapsedTimer() {
+  const startRef = useRef<number>(0);
+  const rafRef = useRef<number>(0);
+  const elRef = useRef<HTMLDivElement | null>(null);
+  const runningRef = useRef(false);
+
+  const formatElapsed = (ms: number) => {
+    const totalMs = Math.floor(ms);
+    const s = Math.floor(totalMs / 1000);
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    const centis = Math.floor((totalMs % 1000) / 10);
+    return m > 0
+      ? `${m}:${String(sec).padStart(2, '0')}.${String(centis).padStart(2, '0')}`
+      : `${sec}.${String(centis).padStart(2, '0')}`;
+  };
+
+  const tick = useCallback(() => {
+    if (!runningRef.current) return;
+    if (elRef.current) {
+      elRef.current.textContent = formatElapsed(performance.now() - startRef.current);
+    }
+    rafRef.current = requestAnimationFrame(tick);
+  }, []);
+
+  const start = useCallback(() => {
+    startRef.current = performance.now();
+    runningRef.current = true;
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(tick);
+  }, [tick]);
+
+  const stop = useCallback(() => {
+    runningRef.current = false;
+    cancelAnimationFrame(rafRef.current);
+  }, []);
+
+  const reset = useCallback(() => {
+    stop();
+    if (elRef.current) elRef.current.textContent = '0.00';
+  }, [stop]);
+
+  useEffect(() => () => cancelAnimationFrame(rafRef.current), []);
+
+  return { elRef, start, stop, reset };
+}
+
+let audioCtx: AudioContext | null = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new AudioContext();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
 function playBuzzSound() {
   try {
-    const ctx = new AudioContext();
+    const ctx = getAudioCtx();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain); gain.connect(ctx.destination);
@@ -18,6 +72,11 @@ function playBuzzSound() {
     gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
     osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.3);
   } catch {}
+}
+
+function formatReaction(ms: number | null): string | null {
+  if (ms == null) return null;
+  return ms < 1000 ? `${Math.round(ms)}ms` : `${(ms / 1000).toFixed(2)}s`;
 }
 
 export default function HostGamePage() {
@@ -32,6 +91,8 @@ function HostGame() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [flash, setFlash] = useState(false);
   const [winnerColor, setWinnerColor] = useState('');
+  const [roundActive, setRoundActive] = useState(false);
+  const timer = useElapsedTimer();
 
   useEffect(() => {
     const socket = getSocket();
@@ -39,11 +100,12 @@ function HostGame() {
     const savedCode = sessionStorage.getItem('roomCode');
     if (nickname && savedCode) socket.emit('rejoin-room', { code: savedCode, nickname });
 
-    socket.on('room-joined', ({ roomState }: { roomState: { teams: Team[]; round: { ranking: RankEntry[] } } }) => {
+    const handleRoomJoined = ({ roomState }: { roomState: { teams: Team[]; round: { active: boolean; ranking: RankEntry[] } } }) => {
       setTeams(roomState.teams);
       setRanking(roomState.round.ranking);
-    });
-    socket.on('buzz-result', ({ ranking: r }: { ranking: RankEntry[] }) => {
+      if (roomState.round.active) { setRoundActive(true); timer.start(); }
+    };
+    const handleBuzzResult = ({ ranking: r }: { ranking: RankEntry[] }) => {
       setRanking(r);
       playBuzzSound();
       if (r.length === 1 && r[0].teamColor) {
@@ -51,17 +113,22 @@ function HostGame() {
         setFlash(true);
         setTimeout(() => setFlash(false), 900);
       }
-    });
-    socket.on('round-reset', () => setRanking([]));
-    socket.on('round-started', () => setRanking([]));
+    };
+    const handleRoundReset = () => { setRanking([]); setRoundActive(false); timer.reset(); };
+    const handleRoundStarted = () => { setRanking([]); setRoundActive(true); timer.start(); };
 
-    return () => { socket.off('room-joined'); socket.off('buzz-result'); socket.off('round-reset'); socket.off('round-started'); };
+    socket.on('room-joined', handleRoomJoined);
+    socket.on('buzz-result', handleBuzzResult);
+    socket.on('round-reset', handleRoundReset);
+    socket.on('round-started', handleRoundStarted);
+
+    return () => { socket.off('room-joined', handleRoomJoined); socket.off('buzz-result', handleBuzzResult); socket.off('round-reset', handleRoundReset); socket.off('round-started', handleRoundStarted); };
   }, []);
 
   const handleNext = () => {
     const socket = getSocket();
     socket.emit('reset-round');
-    setTimeout(() => socket.emit('start-round'), 500);
+    socket.emit('start-round');
   };
 
   return (
@@ -91,6 +158,13 @@ function HostGame() {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          {roundActive && (
+            <div ref={timer.elRef} style={{
+              fontFamily: BZ.mono, fontSize: 18, fontWeight: 700, letterSpacing: -0.5,
+              color: BZ.text, minWidth: 70, textAlign: 'right',
+              fontVariantNumeric: 'tabular-nums',
+            }}>0.00</div>
+          )}
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
             padding: '6px 12px', borderRadius: 9999,
@@ -158,6 +232,14 @@ function HostGame() {
                 <div style={{ fontSize: 80, fontWeight: 800, lineHeight: 0.9, letterSpacing: -4, color: '#fff', wordBreak: 'break-word' }}>
                   {ranking[0].nickname}
                 </div>
+                {formatReaction(ranking[0].reactionMs) && (
+                  <div style={{
+                    marginTop: 16, fontFamily: BZ.mono, fontSize: 28, fontWeight: 700,
+                    color: 'rgba(255,255,255,0.85)', letterSpacing: -0.5,
+                  }}>
+                    ⚡ {formatReaction(ranking[0].reactionMs)}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -183,6 +265,11 @@ function HostGame() {
                           <div style={{ width: 6, height: 6, borderRadius: '50%', background: e.teamColor || '#333' }} />
                           <span style={{ fontSize: 12, color: BZ.textMuted, fontFamily: BZ.mono, letterSpacing: 1 }}>{(e.teamName || '').toUpperCase()}</span>
                         </div>
+                        {formatReaction(e.reactionMs) && (
+                          <div style={{ fontFamily: BZ.mono, fontSize: 13 * scale, color: BZ.textDim, marginTop: 2 }}>
+                            {formatReaction(e.reactionMs)}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );

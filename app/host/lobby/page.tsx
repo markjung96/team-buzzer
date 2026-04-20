@@ -30,27 +30,37 @@ function HostLobby() {
     const savedCode = sessionStorage.getItem('roomCode');
     if (nickname && savedCode) socket.emit('rejoin-room', { code: savedCode, nickname });
 
-    socket.on('room-created', ({ roomState }: { roomState: { players: Player[]; teams: Team[] } }) => {
+    const handleRoomCreated = ({ roomState }: { roomState: { players: Player[]; teams: Team[] } }) => {
       setPlayers(roomState.players);
       setTeams(roomState.teams);
-    });
-    socket.on('room-joined', ({ roomState }: { roomState: { players: Player[]; teams: Team[] } }) => {
+    };
+    const handleRoomJoined = ({ roomState }: { roomState: { players: Player[]; teams: Team[] } }) => {
       setPlayers(roomState.players);
       setTeams(roomState.teams);
-    });
-    socket.on('player-joined', ({ player }: { player: Player }) => setPlayers(p => [...p, player]));
-    socket.on('player-left', ({ playerId }: { playerId: string }) => setPlayers(p => p.filter(x => x.id !== playerId)));
-    socket.on('player-team-changed', ({ playerId, teamId }: { playerId: string; teamId: string }) => {
+    };
+    const handlePlayerJoined = ({ player }: { player: Player }) => setPlayers(p => [...p, player]);
+    const handlePlayerLeft = ({ playerId }: { playerId: string }) => setPlayers(p => p.filter(x => x.id !== playerId));
+    const handlePlayerTeamChanged = ({ playerId, teamId }: { playerId: string; teamId: string }) => {
       setPlayers(p => p.map(x => x.id === playerId ? { ...x, teamId } : x));
-    });
-    socket.on('teams-updated', ({ teams: t }: { teams: Team[] }) => setTeams(t));
-    socket.on('players-updated', ({ players: p }: { players: Player[] }) => setPlayers(p));
-    socket.on('round-started', () => router.push(`/host/game?code=${code}`));
+    };
+    const handleTeamsUpdated = ({ teams: t }: { teams: Team[] }) => setTeams(t);
+    const handlePlayersUpdated = ({ players: p }: { players: Player[] }) => setPlayers(p);
+    const handleRoundStarted = () => router.push(`/host/game?code=${code}`);
+
+    socket.on('room-created', handleRoomCreated);
+    socket.on('room-joined', handleRoomJoined);
+    socket.on('player-joined', handlePlayerJoined);
+    socket.on('player-left', handlePlayerLeft);
+    socket.on('player-team-changed', handlePlayerTeamChanged);
+    socket.on('teams-updated', handleTeamsUpdated);
+    socket.on('players-updated', handlePlayersUpdated);
+    socket.on('round-started', handleRoundStarted);
 
     return () => {
-      socket.off('room-created'); socket.off('room-joined'); socket.off('player-joined');
-      socket.off('player-left'); socket.off('player-team-changed'); socket.off('teams-updated');
-      socket.off('players-updated'); socket.off('round-started');
+      socket.off('room-created', handleRoomCreated); socket.off('room-joined', handleRoomJoined);
+      socket.off('player-joined', handlePlayerJoined); socket.off('player-left', handlePlayerLeft);
+      socket.off('player-team-changed', handlePlayerTeamChanged); socket.off('teams-updated', handleTeamsUpdated);
+      socket.off('players-updated', handlePlayersUpdated); socket.off('round-started', handleRoundStarted);
     };
   }, [code, router]);
 
@@ -79,7 +89,14 @@ function HostLobby() {
       {/* Header */}
       <div style={{ padding: '54px 20px 0' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <div style={{ fontFamily: BZ.mono, fontSize: 10, letterSpacing: 2, color: BZ.textDim, textTransform: 'uppercase' }}>방 코드</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <button onClick={() => { getSocket().emit('leave-room'); sessionStorage.clear(); router.push('/'); }} style={{
+              width: 36, height: 36, borderRadius: 10, border: `1px solid ${BZ.line}`,
+              background: BZ.surface, color: BZ.textMuted, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, padding: 0,
+            }}>←</button>
+            <div style={{ fontFamily: BZ.mono, fontSize: 10, letterSpacing: 2, color: BZ.textDim, textTransform: 'uppercase' }}>방 코드</div>
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: BZ.mono, fontSize: 10, letterSpacing: 1.5, color: BZ.teams.red.base }}>
             <Live size={8} /> LIVE
           </div>
