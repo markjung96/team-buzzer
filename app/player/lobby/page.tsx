@@ -1,13 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getSocket } from '@/lib/socket';
 import { BZ, shade } from '@/lib/tokens';
 import { Team } from '@/lib/types';
 import { Check } from '@/components/Icons';
 
-export default function PlayerLobby() {
+export default function PlayerLobbyPage() {
+  return <Suspense><PlayerLobby /></Suspense>;
+}
+
+function PlayerLobby() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const code = searchParams.get('code') || '';

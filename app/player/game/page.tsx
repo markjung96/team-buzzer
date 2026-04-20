@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { Suspense, useEffect, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getSocket } from '@/lib/socket';
 import { BZ, shade } from '@/lib/tokens';
@@ -20,7 +20,11 @@ function playBuzzSound() {
   } catch {}
 }
 
-export default function PlayerGame() {
+export default function PlayerGamePage() {
+  return <Suspense><PlayerGame /></Suspense>;
+}
+
+function PlayerGame() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const code = searchParams.get('code') || '';

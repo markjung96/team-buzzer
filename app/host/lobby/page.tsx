@@ -1,13 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getSocket } from '@/lib/socket';
 import { BZ, TEAM_PRESETS } from '@/lib/tokens';
 import { Player, Team } from '@/lib/types';
 import { Plus, Pencil, X, Check, Play, Live } from '@/components/Icons';
 
-export default function HostLobby() {
+export default function HostLobbyPage() {
+  return <Suspense><HostLobby /></Suspense>;
+}
+
+function HostLobby() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const code = searchParams.get('code') || '';
